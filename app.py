@@ -797,44 +797,48 @@ def main() -> None:
         box_color = "rgba(255,255,255,0.05)"
         border_color = "rgba(255, 255, 255, 0.3)"
         
+        import re
+        
+        if "[FINAL_VERDICT]" in llm_response:
+            body_text, verdict_text = llm_response.split("[FINAL_VERDICT]", 1)
+            verdict_eval = verdict_text
+        else:
+            body_text = llm_response
+            verdict_text = ""
+            verdict_eval = llm_response
+            
+        verdict_upper = verdict_eval.upper()
+        
         if "LLM Error" in llm_response or "Missing" in llm_response:
             st.warning(llm_response)
         else:
-            if "WARNING" in llm_upper or "SELL" in llm_upper:
+            if "WARNING" in verdict_upper or "SELL" in verdict_upper:
                 box_color = "rgba(255, 75, 75, 0.1)" # red for sell/warning
                 border_color = "#ff4b4b"
-            elif "BUY" in llm_upper:
+            elif "BUY" in verdict_upper:
                 box_color = "rgba(0, 255, 204, 0.1)" # green for buy
                 border_color = "#00ffcc"
-            elif "HOLD" in llm_upper:
-                if "SMALL AMOUNT" in llm_upper or "SMALL POSITION" in llm_upper or "SMALLER AMOUNT" in llm_upper:
+            elif "HOLD" in verdict_upper:
+                if "SMALL AMOUNT" in verdict_upper or "SMALL POSITION" in verdict_upper or "SMALLER AMOUNT" in verdict_upper:
                     box_color = "rgba(0, 255, 204, 0.1)" # green for small position
                     border_color = "#00ffcc"
                 else:
                     box_color = "rgba(255, 75, 75, 0.1)" # red for wait/hold
                     border_color = "#ff4b4b"
+                    
+        formatted_text = body_text.replace(chr(10), "<br>")
+        formatted_text = re.sub(r'\*\*(.*?)\*\*', r'<b style="color:#ffffff; font-weight:800;">\1</b>', formatted_text)
             
-            import re
-            
-            if "[FINAL_VERDICT]" in llm_response:
-                body_text, verdict_text = llm_response.split("[FINAL_VERDICT]", 1)
-            else:
-                body_text = llm_response
-                verdict_text = ""
-                
-            formatted_text = body_text.replace(chr(10), "<br>")
-            formatted_text = re.sub(r'\*\*(.*?)\*\*', r'<b style="color:#ffffff; font-weight:800;">\1</b>', formatted_text)
-            
-            verdict_html = ""
-            if verdict_text.strip():
-                # Strip markdown asterisks as we inject massive custom CSS styling
-                clean_verdict = verdict_text.replace("*", "").strip()
-                verdict_html = f"<div style='margin-top: 20px; padding: 15px; background: rgba(0,0,0,0.3); border-left: 5px solid {border_color}; font-size: 1.15rem; font-weight: 900; color: #ffffff; text-transform: uppercase; box-shadow: 0 4px 15px rgba(0,0,0,0.2);'>FINAL VERDICT: <span style='color: {border_color};'>{clean_verdict}</span></div>"
+        verdict_html = ""
+        if verdict_text.strip():
+            # Strip markdown asterisks as we inject massive custom CSS styling
+            clean_verdict = verdict_text.replace("*", "").strip()
+            verdict_html = f"<div style='margin-top: 20px; padding: 15px; background: rgba(0,0,0,0.3); border-left: 5px solid {border_color}; font-size: 1.15rem; font-weight: 900; color: #ffffff; text-transform: uppercase; box-shadow: 0 4px 15px rgba(0,0,0,0.2);'>FINAL VERDICT: <span style='color: {border_color};'>{clean_verdict}</span></div>"
 
-            st.markdown(f"<div style='background: linear-gradient(90deg, {box_color} 0%, rgba(0,0,0,0) 100%); border-left: 4px solid {border_color}; border-radius: 4px; padding: 20px 25px; font-size: 1.05rem; line-height: 1.7; box-shadow: 0 4px 15px rgba(0,0,0,0.2);'>{formatted_text}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='background: linear-gradient(90deg, {box_color} 0%, rgba(0,0,0,0) 100%); border-left: 4px solid {border_color}; border-radius: 4px; padding: 20px 25px; font-size: 1.05rem; line-height: 1.7; box-shadow: 0 4px 15px rgba(0,0,0,0.2);'>{formatted_text}</div>", unsafe_allow_html=True)
             
-            if verdict_html:
-                st.markdown(verdict_html, unsafe_allow_html=True)
+        if verdict_html:
+            st.markdown(verdict_html, unsafe_allow_html=True)
 
     st.markdown("<br><br><br><div style='text-align: center; color: rgba(255,255,255,0.3); font-size: 0.8rem; letter-spacing: 0.5px;'>This project is for educational purposes only. Not intended to provide real trading advice.</div>", unsafe_allow_html=True)
 
