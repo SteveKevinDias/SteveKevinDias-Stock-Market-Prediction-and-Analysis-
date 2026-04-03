@@ -569,6 +569,36 @@ def get_all_nse_tickers() -> list[str]:
     except Exception:
         return TICKERS
 
+
+def resolve_ticker_from_name(company_name: str, api_key: str) -> str | None:
+    """Use an LLM to resolve a company name to its NSE/BSE ticker symbol, then validate with yfinance."""
+    import openai
+    try:
+        client = openai.OpenAI(api_key=api_key)
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{
+                "role": "user",
+                "content": (
+                    f"You are a financial data assistant specializing in Indian stock markets (NSE/BSE).\n"
+                    f"The user is looking for the stock ticker of: '{company_name}'\n"
+                    f"Return ONLY the NSE ticker symbol ending in .NS (e.g., RELIANCE.NS, TCS.NS, INFY.NS).\n"
+                    f"If the company is listed on BSE only, return the BSE ticker ending in .BO.\n"
+                    f"Return ONLY the ticker symbol, nothing else. No explanation, no punctuation."
+                )
+            }],
+            temperature=0,
+            max_tokens=20
+        )
+        raw_ticker = response.choices[0].message.content.strip().upper().replace('`', '').replace('"', '').replace("'", '')
+        # Validate with yfinance to confirm ticker is real
+        info = yf.Ticker(raw_ticker).info
+        if info.get("regularMarketPrice") or info.get("currentPrice") or info.get("previousClose"):
+            return raw_ticker
+        return None
+    except Exception:
+        return None
+
 @st.cache_data(show_spinner=False, ttl=24*3600)
 def get_dynamic_market_cap_category(ticker: str) -> str:
     try:
@@ -660,21 +690,37 @@ def main() -> None:
     with st.sidebar:
         st.markdown("## 🔍 Market Intelligence")
         
-        # Single unified dropdown tracking native NSE universe
-        all_options = get_all_nse_tickers()
-        default_index = all_options.index("RELIANCE.NS") if "RELIANCE.NS" in all_options else 0
-        ticker = st.selectbox("Stock Ticker", options=all_options, index=default_index)
+        openai_api_key = st.text_input("OpenAI API Key", type="password", help="Required for ticker resolution and LLM analysis.")
         
-        # Auto-classify to route to the correct neural engine natively
-        with st.spinner("Classifying Scale..."):
-            market_cap = get_dynamic_market_cap_category(ticker)
+        company_name_input = st.text_input("Enter Company Name", placeholder="e.g. Reliance, Infosys, HDFC Bank...")
         
-        st.markdown(f"**Detected Segment:** `{market_cap}`")
+        ticker = None
+        market_cap = None
+        
+        if company_name_input:
+            if not openai_api_key:
+                st.warning("⚠️ Please enter your OpenAI API Key above to resolve the company name.")
+            else:
+                with st.spinner("Resolving ticker symbol..."):
+                    ticker = resolve_ticker_from_name(company_name_input, openai_api_key)
+                
+                if ticker:
+                    st.success(f"✅ Resolved: `{ticker}`")
+                    with st.spinner("Classifying market segment..."):
+                        market_cap = get_dynamic_market_cap_category(ticker)
+                    st.markdown(f"**Detected Segment:** `{market_cap}`")
+                else:
+                    st.error("❌ Could not resolve ticker. Try a more specific company name (e.g. 'Tata Motors' not 'Tata').")
         
         st.markdown("---")
-        st.markdown("### 🤖 Artificial Intelligence")
-        openai_api_key = st.text_input("OpenAI API Key (Optional)", type="password", help="Providing your OpenAI key yields deeper fundamental analysis.")
+        st.markdown("<small style='color:#a0aec0;'>Enter company name above to begin analysis.</small>", unsafe_allow_html=True)
         
+    if not ticker or not market_cap:
+        st.markdown("<h1>📈 Advanced Terminal</h1>", unsafe_allow_html=True)
+        st.markdown("<p style='color:#a0aec0;'>Enter a company name in the sidebar to begin AI-powered market analysis.</p>", unsafe_allow_html=True)
+        st.info("💡 Type any Indian company name — e.g. 'Wipro', 'HDFC Bank', 'Zomato', 'Coal India' — and the AI will resolve the correct ticker automatically.")
+        return
+
     st.markdown(f"<h1>📈 Advanced Terminal <span style='font-size:1.5rem; color:#00ffcc;'>| {ticker}</span></h1>", unsafe_allow_html=True)
     st.markdown("<p style='color:#a0aec0;'>Real-time AI-powered Quantitative & Fundamental Analytics</p>", unsafe_allow_html=True)
 
