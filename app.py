@@ -439,14 +439,11 @@ You MUST break your analysis down into detailed segments without using any Markd
 3. **Strategic Outlook & Duration**
 
 CRITICAL DECISION LOGIC: 
-You must evaluate the XGBoost prediction, the Hybrid Signal, and the live News Sentiment fairly.
-- DO NOT over-hedge when momentum is confirmed, but DO NOT issue a **BUY** recklessly if the fundamental basis is weak or missing.
-- IF THE PROVIDED NEWS IS EMPTY OR SPARSE: You must heavily rely on your own internal, pre-trained fundamental knowledge regarding {ticker} (e.g. recent financials, macro positioning, sector dominance) to supplement the gap.
-- If XGBoost points to a positive trend AND your internal or external news synthesis confirms strong fundamental momentum, you MUST confidently output **BUY**.
-- If there is a decent chance of going down or negative news exists, boldly output **SELL**.
-- If your final decision is HOLD, you MUST choose between two strict variations:
-  A) If you are unsure but the data SLIGHTLY LEANS POSITIVE -> Use `**HOLD** (invest a small amount and size up later if required)`
-  B) If you are unsure but the data SLIGHTLY LEANS NEGATIVE, is flat, or positive momentum is unconfirmed -> Use `**HOLD** (wait for some time)`
+You must evaluate the XGBoost prediction, the Hybrid Signal, and the live News Sentiment fairly and comprehensively.
+- IF THE PROVIDED NEWS IS EMPTY OR SPARSE: You must intuitively supplement the gap with your own fundamental knowledge base regarding {ticker} (e.g. its market dominance, trailing financials).
+- DO NOT over-hedge. If the XGBoost model shows a BUY and your fundamental check shows strong positive continuity, output **BUY** without hesitation.
+- If the ML model is mostly positive but misses some key confirmations, or lacks an overwhelming sentiment consensus, lean cautiously positive by safely outputting `**HOLD** (invest a small amount and size up later if required)`.
+- If the model is explicitly negative, flat, or there's definitively negative news, output **SELL** or `**HOLD** (wait for some time)`.
 
 IMPORTANT FORMATTING RULE: DO NOT wrap your response in code blocks. Your final ultimate prediction MUST be on the very last line, separated EXACTLY like this (replace the placeholder with your actual decision):
 [FINAL_VERDICT] YOUR_DECISION_HERE
@@ -810,7 +807,7 @@ def main() -> None:
                 box_color = "rgba(0, 255, 204, 0.1)" # green for buy
                 border_color = "#00ffcc"
             elif "HOLD" in llm_upper:
-                if "SMALL POSITION" in llm_upper or "SMALLER AMOUNT" in llm_upper:
+                if "SMALL AMOUNT" in llm_upper or "SMALL POSITION" in llm_upper or "SMALLER AMOUNT" in llm_upper:
                     box_color = "rgba(0, 255, 204, 0.1)" # green for small position
                     border_color = "#00ffcc"
                 else:
