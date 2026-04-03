@@ -441,8 +441,9 @@ You MUST break your analysis down into detailed segments without using any Markd
 CRITICAL DECISION LOGIC: 
 You must evaluate the XGBoost prediction, the Hybrid Signal, and the live News Sentiment fairly and comprehensively.
 - IF THE PROVIDED NEWS IS EMPTY OR SPARSE: You must intuitively supplement the gap with your own fundamental knowledge base regarding {ticker} (e.g. its market dominance, trailing financials).
-- DO NOT over-hedge. If the XGBoost model shows a BUY and your fundamental check shows strong positive continuity, output **BUY** without hesitation.
-- If the ML model is mostly positive but misses some key confirmations, or lacks an overwhelming sentiment consensus, lean cautiously positive by safely outputting `**HOLD** (invest a small amount and size up later if required)`.
+- If the XGBoost model shows a BUY and your fundamental check shows decent stability or positive momentum, output **BUY**. You do not need perfect parity to issue a BUY.
+- Crucially, even if the Hybrid Algorithm hesitantly suggests a 'Hold', if the Live News is noticeably skewed positive (e.g., positive headlines heavily outnumber negative ones) OR your own fundamental confidence is high, you MUST override the hybrid hesitation and decisively output **BUY**.
+- Reserve `**HOLD** (invest a small amount and size up later if required)` ONLY for situations where the ML model leans positive, but there is active conflicting data, deeply mixed news, or genuine market uncertainty that strictly warrants caution.
 - If the model is explicitly negative, flat, or there's definitively negative news, output **SELL** or `**HOLD** (wait for some time)`.
 
 IMPORTANT FORMATTING RULE: DO NOT wrap your response in code blocks. Your final ultimate prediction MUST be on the very last line, separated EXACTLY like this (replace the placeholder with your actual decision):
