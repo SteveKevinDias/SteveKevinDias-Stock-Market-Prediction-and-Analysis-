@@ -580,24 +580,35 @@ def resolve_ticker_from_name(company_name: str, api_key: str) -> str | None:
             messages=[{
                 "role": "user",
                 "content": (
-                    f"You are a financial data assistant specializing in Indian stock markets (NSE/BSE).\n"
-                    f"The user is looking for the stock ticker of: '{company_name}'\n"
-                    f"Return ONLY the NSE ticker symbol ending in .NS (e.g., RELIANCE.NS, TCS.NS, INFY.NS).\n"
-                    f"If the company is listed on BSE only, return the BSE ticker ending in .BO.\n"
-                    f"Return ONLY the ticker symbol, nothing else. No explanation, no punctuation."
+                    f"You are a financial data expert for Indian stock markets (NSE/BSE).\n"
+                    f"The user typed: '{company_name}'\n"
+                    f"This may be an informal name, abbreviation, or partial name (e.g. 'SMS Pharma' = SMSPHARMA.NS, 'HDFC bank' = HDFCBANK.NS, 'Tata Motors' = TATAMOTORS.NS).\n"
+                    f"Identify the best matching company listed on NSE or BSE and return ONLY its yfinance ticker symbol.\n"
+                    f"NSE tickers end in .NS (preferred). BSE tickers end in .BO (only if not on NSE).\n"
+                    f"Return ONLY the ticker symbol. No explanation, no punctuation, nothing else."
                 )
             }],
             temperature=0,
             max_tokens=20
         )
-        raw_ticker = response.choices[0].message.content.strip().upper().replace('`', '').replace('"', '').replace("'", '')
-        # Validate with yfinance to confirm ticker is real
-        info = yf.Ticker(raw_ticker).info
-        if info.get("regularMarketPrice") or info.get("currentPrice") or info.get("previousClose"):
+        raw_ticker = response.choices[0].message.content.strip().upper().replace('`', '').replace('"', '').replace("'", '').split()[0]
+        
+        # Validate by fetching actual price history - much more reliable than .info checks
+        hist = yf.Ticker(raw_ticker).history(period="5d")
+        if not hist.empty:
             return raw_ticker
+        
+        # Fallback: try .BO if .NS failed
+        if raw_ticker.endswith(".NS"):
+            bo_ticker = raw_ticker.replace(".NS", ".BO")
+            hist_bo = yf.Ticker(bo_ticker).history(period="5d")
+            if not hist_bo.empty:
+                return bo_ticker
+        
         return None
     except Exception:
         return None
+
 
 @st.cache_data(show_spinner=False, ttl=24*3600)
 def get_dynamic_market_cap_category(ticker: str) -> str:
