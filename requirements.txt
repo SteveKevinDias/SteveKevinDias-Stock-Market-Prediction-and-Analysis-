@@ -1,3 +1,4 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
 yfinance
 pandas
 numpy
@@ -5,7 +6,7 @@ matplotlib
 scikit-learn
 xgboost
 streamlit
-git+https://github.com/twopirllc/pandas-ta.git
+pandas-ta
 plotly
 transformers
 torch
