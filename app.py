@@ -811,8 +811,8 @@ def main() -> None:
                     box_color = "rgba(0, 255, 204, 0.1)" # green for small position
                     border_color = "#00ffcc"
                 else:
-                    box_color = "rgba(59, 130, 246, 0.1)" # blue for wait/hold
-                    border_color = "#3b82f6"
+                    box_color = "rgba(255, 75, 75, 0.1)" # red for wait/hold
+                    border_color = "#ff4b4b"
             
             import re
             
@@ -836,6 +836,7 @@ def main() -> None:
             if verdict_html:
                 st.markdown(verdict_html, unsafe_allow_html=True)
 
+    st.markdown("<br><br><br><div style='text-align: center; color: rgba(255,255,255,0.3); font-size: 0.8rem; letter-spacing: 0.5px;'>This project is for educational purposes only. Not intended to provide real trading advice.</div>", unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
