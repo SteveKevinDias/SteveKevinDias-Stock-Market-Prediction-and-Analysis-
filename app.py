@@ -411,14 +411,17 @@ def score_headlines_with_finbert(headlines: tuple[str, ...]) -> pd.DataFrame:
 
 def ask_llm_insight(api_key, ticker, ml_pred, confidence, hybrid_sig, sentiment_summary, headlines):
     import openai
+    from datetime import datetime
     if not api_key:
         return "⚠️ OpenAI API Key is missing. Please provide it in the sidebar to view LLM Deep Analysis."
         
     client = openai.OpenAI(api_key=api_key)
     hl_text = chr(10).join([f"- {h}" for h in headlines])
+    current_date = datetime.now().strftime("%B %d, %Y")
     
     prompt = f"""
 You are a top-tier quantitative and fundamental stock market analyst focusing on the Indian stock market (NSE/BSE).
+Today's date is {current_date}. Keep this in mind when analyzing recent news to correctly identify if events (like earnings reports) have already passed or are upcoming.
 We are analyzing {ticker} currently.
 Technical XGBoost Prediction Output: {ml_pred} (Confidence: {confidence:.2%})
 Hybrid Algorithm Signal Result: {hybrid_sig}
@@ -436,12 +439,14 @@ Act as an elite portfolio manager briefing a colleague. Provide clear, highly ex
 You MUST break your analysis down into detailed segments without using any Markdown header hashes (e.g., NO `#` or `##`). Just use basic numbered bolding like:
 1. **Technical Breakdown**
 2. **Fundamental Sentiment**
-3. **Strategic Outlook & Duration**
+3. **Strategic Outlook**
+4. **Expected Duration**: [State the explicit timeframe prominently here, e.g., Short-term (1-2 weeks), Medium-term (1-3 months)]
 
 CRITICAL DECISION LOGIC: 
 You must evaluate the XGBoost prediction, the Hybrid Signal, and the live News Sentiment fairly and comprehensively.
 - IF THE PROVIDED NEWS IS EMPTY OR SPARSE: You must intuitively supplement the gap with your own fundamental knowledge base regarding {ticker} (e.g. its market dominance, trailing financials).
-- QUALITATIVE NEWS WEIGHTING & EXPECTED DURATION: Do not just count the number of positive vs. negative headlines. You must qualitatively weigh the true severity of the catalysts. Evaluate what truly matters. Also, clearly state your expected duration for the sentiment (e.g., short-term volatility, medium-term growth) to set a fair and realistic timeframe.
+- QUALITATIVE NEWS WEIGHTING: Do not just count the number of positive vs. negative headlines. You must qualitatively weigh the true severity of the catalysts. Evaluate what truly matters.
+- EXPLICIT EXPECTED DURATION: You MUST provide a dedicated "Expected Duration" estimate explaining exactly how long this sentiment will hold before recalculation is needed. Do not be vague.
 - BUY SIGNAL WEIGHTING: For BUY signals, give significantly more weightage to the Hybrid Algorithm Signal combined with the live News Sentiment, and slightly less weightage to the raw XGBoost prediction (though it should still carry some weight).
 - If the XGBoost model shows a BUY, your fundamental check shows decent stability or positive momentum, and the live news is positive overall by some margin, output **BUY**. You do not need perfect parity to issue a BUY.
 - Crucially, even if the Hybrid Algorithm hesitantly suggests a 'Hold', if the Live News is noticeably skewed positive (e.g., positive headlines heavily outnumber negative ones) OR your own fundamental confidence is high, you MUST override the hybrid hesitation and decisively output **BUY**.
