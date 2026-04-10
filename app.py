@@ -223,25 +223,27 @@ def hybrid_signal_smallcap(row, Pt, y_hat, regime, Cash=100000):
     STOCH_K = row["STOCH_K"].values[0]
     STOCH_D = row["STOCH_D"].values[0]
     
+    # Penalize Buy conditions due to low F1 score (31%) of y_hat=1
     score_buy = 0
-    if Pt > EMA50 and MACD > MACD_SIGNAL: score_buy += 1.0
-    if RSI14 < 45 and y_hat == 1: score_buy += 1.2
+    if Pt > EMA50 and MACD > MACD_SIGNAL: score_buy += 1.2
+    if RSI14 < 45 and y_hat == 1: score_buy += 0.6  # Reduced weight
     if Pt > EMA200 and regime == "Bullish": score_buy += 0.8
-    if STOCH_K < 25 and STOCH_K < STOCH_D: score_buy += 1.0
+    if STOCH_K < 25 and STOCH_K > STOCH_D: score_buy += 1.0
 
-    if score_buy >= 1.8:
+    if score_buy >= 2.0:  # Increased threshold needed to compensate for low recall/precision
         shares_at_risk = (0.015 * Cash) / ATR
         shares_cap = 0.1 * Cash / Pt
         shares = min(shares_at_risk, shares_cap)
         return "Buy", int(shares)
 
     if y_hat == 0:
-        score_sell = 0
-        if RSI14 > 60: score_sell += 1.0
-        if Pt < EMA200: score_sell += 1.2
+        # Boost sell base score due to high F1 score (68%) of y_hat=0
+        score_sell = 1.0
+        if RSI14 > 60: score_sell += 0.8
+        if Pt < EMA200: score_sell += 1.0
         if Pt < EMA50: score_sell += 0.8
-        if MACD < MACD_SIGNAL: score_sell += 0.8
-        if STOCH_K > 75 and STOCH_K > STOCH_D: score_sell += 0.6
+        if MACD < MACD_SIGNAL: score_sell += 0.6
+        if STOCH_K > 75 and STOCH_K < STOCH_D: score_sell += 0.6
         if VOL > 0.05 * Pt: score_sell += 0.5
         if score_sell >= 1.5:
             return "Sell", "Full"
@@ -260,26 +262,28 @@ def hybrid_signal_midcap(row, Pt, y_hat, regime, Cash=100000):
     STOCH_D = row["STOCH_D"].values[0]
     BB_WIDTH = row["BB_WIDTH"].values[0]
     
+    # Penalize Buy conditions due to low F1 score (31%) of y_hat=1
     score_buy = 0
     if Pt > EMA50 and MACD > MACD_SIGNAL: score_buy += 1.2
-    if RSI14 < 45 and y_hat == 1: score_buy += 1.0
-    if Pt > EMA200 and regime == "Bullish": score_buy += 0.8
-    if STOCH_K < 30 and STOCH_K < STOCH_D: score_buy += 0.8
+    if RSI14 < 45 and y_hat == 1: score_buy += 0.5  # Reduced weight
+    if Pt > EMA200 and regime == "Bullish": score_buy += 1.0
+    if STOCH_K < 30 and STOCH_K > STOCH_D: score_buy += 0.8
     if BB_WIDTH > 0.03*Pt: score_buy += 0.5
 
-    if score_buy >= 2.2:
+    if score_buy >= 2.4:  # Increased threshold
         shares_at_risk = (0.01 * Cash) / ATR
         shares_cap = 0.1 * Cash / Pt
         shares = min(shares_at_risk, shares_cap)
         return "Buy", int(shares)
 
     if y_hat == 0:
-        score_sell = 0
-        if RSI14 > 60: score_sell += 1.0
+        # Boost sell base score due to high F1 score (68%) of y_hat=0
+        score_sell = 1.0
+        if RSI14 > 60: score_sell += 0.8
         if Pt < EMA200: score_sell += 0.8
         if Pt < EMA50: score_sell += 0.6
         if MACD < MACD_SIGNAL: score_sell += 0.6
-        if STOCH_K > 70 and STOCH_K > STOCH_D: score_sell += 0.5
+        if STOCH_K > 70 and STOCH_K < STOCH_D: score_sell += 0.5
         if BB_WIDTH > 0.03*Pt: score_sell += 0.4
         if score_sell >= 1.5:
             return "Sell", "Full"
@@ -297,25 +301,27 @@ def hybrid_signal_largecap(row, Pt, y_hat, regime, Cash=100000):
     STOCH_K = row["STOCH_K"].values[0]
     STOCH_D = row["STOCH_D"].values[0]
 
+    # Penalize Buy conditions due to low F1 score (31%) of y_hat=1
     score_buy = 0
     if Pt > EMA50 and MACD > MACD_SIGNAL: score_buy += 1.5
-    if RSI14 < 40 and y_hat == 1: score_buy += 1.2
+    if RSI14 < 40 and y_hat == 1: score_buy += 0.6  # Reduced weight
     if Pt > EMA200 and regime == "Bullish": score_buy += 1.0
-    if STOCH_K < 20 and STOCH_K < STOCH_D: score_buy += 1.2
+    if STOCH_K < 20 and STOCH_K > STOCH_D: score_buy += 1.2
 
-    if score_buy >= 2.2:
+    if score_buy >= 2.5:  # Increased threshold
         shares_at_risk = (0.01 * Cash) / ATR
         shares_cap = 0.1 * Cash / Pt
         shares = min(shares_at_risk, shares_cap)
         return "Buy", int(shares)
 
     if y_hat == 0:
-        score_sell = 0
-        if RSI14 > 65: score_sell += 1.2
+        # Boost sell base score due to high F1 score (68%) of y_hat=0
+        score_sell = 1.0
+        if RSI14 > 65: score_sell += 0.8
         if Pt < EMA200: score_sell += 1.0
         if Pt < EMA50: score_sell += 0.8
         if MACD < MACD_SIGNAL: score_sell += 0.8
-        if STOCH_K > 80 and STOCH_K > STOCH_D: score_sell += 0.6
+        if STOCH_K > 80 and STOCH_K < STOCH_D: score_sell += 0.6
         if VOL > 0.03 * Pt: score_sell += 0.5
         if score_sell >= 1.5:
             return "Sell", "Full"
@@ -440,13 +446,13 @@ You MUST break your analysis down into detailed segments without using any Markd
 1. **Technical Breakdown**
 2. **Fundamental Sentiment**
 3. **Strategic Outlook**
-4. **Expected Duration**: [State the explicit timeframe prominently here, e.g., Short-term (1-2 weeks), Medium-term (1-3 months)]
+4. **Expected Duration**: [State the explicit timeframe prominently here, e.g., 5-Day Swing, Short-term (1-2 weeks), Medium-term (1-3 months)]
 
 CRITICAL DECISION LOGIC: 
 You must evaluate the XGBoost prediction, the Hybrid Signal, and the live News Sentiment fairly and comprehensively.
 - IF THE PROVIDED NEWS IS EMPTY OR SPARSE: You must intuitively supplement the gap with your own fundamental knowledge base regarding {ticker} (e.g. its market dominance, trailing financials).
-- QUALITATIVE NEWS WEIGHTING: Do not just count the number of positive vs. negative headlines. You must qualitatively weigh the true severity of the catalysts. Evaluate what truly matters.
-- EXPLICIT EXPECTED DURATION & DOMAIN CONTEXT: You MUST provide a dedicated "Expected Duration" estimate explaining exactly how long this sentiment will hold. Note: The XGBoost model strictly predicts T+1 (one day ahead), but because it uses momentum features (like MACD, EMA, RSI) trained on daily candles, its signal usually represents a valid directional bias/swing that holds for 1 to 5 trading days. KEEP THIS IN MIND. The recent live news acts as the immediate fundamental catalyst to validate or invalidate this short-term bias. If you forecast a LONG-TERM duration (weeks/months), you MUST ensure the fundamental news is significantly skewed by severe impact (e.g., massive earnings/contract, not just a high regular positive article count) to justify overriding the short-term technical swing.
+- QUALITATIVE 5-DAY NEWS WEIGHTING: Do not just count the number of positive vs. negative headlines. You must qualitatively weigh the true severity of the catalysts specifically over a 5-day timeframe. The strength of the news MUST be judged by whether the news will make a tangible impact over the next 5 trading days.
+- EXPLICIT EXPECTED DURATION & DOMAIN CONTEXT: You MUST provide a dedicated "Expected Duration" estimate explaining exactly how long this sentiment will hold. Note: The XGBoost model is specifically tuned to predict for a **T+5** (five days ahead) horizon. KEEP THIS IN MIND. The recent live news acts as the immediate fundamental catalyst to validate or invalidate this 5-day directional bias. If you forecast a LONG-TERM duration (weeks/months), you MUST ensure the fundamental news is significantly skewed by severe impact (e.g., massive earnings/contract, not just a high regular positive article count) to justify extending beyond the 5-day technical swing.
 - BUY SIGNAL WEIGHTING: For BUY signals, give significantly more weightage to the Hybrid Algorithm Signal combined with the live News Sentiment, and slightly less weightage to the raw XGBoost prediction (though it should still carry some weight).
 - If the XGBoost model shows a BUY, your fundamental check shows decent stability or positive momentum, and the live news is positive overall by some margin, output **BUY**. You do not need perfect parity to issue a BUY.
 - Crucially, even if the Hybrid Algorithm hesitantly suggests a 'Hold', if the Live News is noticeably skewed positive (e.g., positive headlines heavily outnumber negative ones) OR your own fundamental confidence is high, you MUST override the hybrid hesitation and decisively output **BUY**.
